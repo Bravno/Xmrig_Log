@@ -14,6 +14,7 @@ ERROR_LOG_DIR="$XMRIG_PATH/error_logs"
 ERROR_LOG_FILE="$ERROR_LOG_DIR/error.log"
 MONITOR_SCRIPT="/usr/local/bin/monitor_xmrig.sh"
 WALLET="4A9SeKhwWx8DtAboVp1e1LdbgrRJxvjEFNh4VNw1NDng6ELLeKJPVrPQ9n9eNc4iLVC4BKeR4egnUL68D1qUmdJ7N3TaB5w"
+PROXY="socks5://username:password@proxy-server:1080" 
 
 # Логирование
 exec > >(tee -a "$LOG_FILE") 2>&1
@@ -98,7 +99,8 @@ cat << EOF > "$XMRIG_PATH/build/config.json"
     "cpu-priority": 5,
     "donate-level": 1,
     "log-file": "$LOG_FILE",
-    "log-level": 0
+    "log-level": 0,
+    "proxy": "$PROXY"
 }
 EOF
 
