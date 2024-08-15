@@ -27,11 +27,22 @@ handle_error() {
     exit 1
 }
 
-# Создание директории для логов ошибок
-echo -e "${YELLOW}Создание директории для логов ошибок...${NC}"
-mkdir -p "$ERROR_LOG_DIR" || handle_error "Не удалось создать директорию для логов ошибок"
+# Проверка и установка необходимых команд
+check_command() {
+    if ! command -v "$1" >/dev/null 2>&1; then
+        handle_error "$1 не установлен. Установите его и повторите попытку."
+    fi
+}
 
-# Определение пакетного менеджера и установка зависимостей
+# Проверка и установка зависимостей
+echo -e "${YELLOW}Проверка и установка необходимых команд...${NC}"
+check_command git
+check_command cmake
+check_command make
+check_command screen
+check_command cpulimit
+check_command crontab
+
 echo -e "${BLUE}Определение пакетного менеджера...${NC}"
 
 if command -v apt >/dev/null 2>&1; then
@@ -113,7 +124,7 @@ Description=XMRig CPU Miner Service
 After=network.target
 
 [Service]
-ExecStart=/usr/bin/screen -dmS xmrig bash -c "cpulimit -l 50 -- '$XMRIG_PATH/build/xmrig' --config '$XMRIG_PATH/build/config.json' | tee -a $LOG_FILE"
+ExecStart=/usr/bin/screen -dmS xmrig bash -c "cpulimit -l 50 -- '$XMRIG_PATH/build/xmrig' --config '$XMRIG_PATH/build/config.json'"
 WorkingDirectory=$XMRIG_PATH/build/
 Restart=always
 Nice=10
@@ -145,9 +156,13 @@ echo -e "${BLUE}Добавление скрипта мониторинга в cr
 
 # Включение и запуск службы
 echo -e "${BLUE}Включение и запуск службы XMRig...${NC}"
-systemctl daemon-reload || handle_error "Не удалось перезагрузить демоны systemd"
-systemctl enable xmrig.service || handle_error "Не удалось включить службу XMRig"
-systemctl start xmrig.service || handle_error "Не удалось запустить службу XMRig"
+if systemctl list-unit-files | grep -q xmrig.service; then
+    systemctl daemon-reload || handle_error "Не удалось перезагрузить демоны systemd"
+    systemctl enable xmrig.service || handle_error "Не удалось включить службу XMRig"
+    systemctl start xmrig.service || handle_error "Не удалось запустить службу XMRig"
+else
+    handle_error "Служба XMRig не была создана. Проверьте конфигурацию."
+fi
 
 # Вывод логов на экран после запуска
 echo -e "${BLUE}Вывод логов XMRig в реальном времени...${NC}"
