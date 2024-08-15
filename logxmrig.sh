@@ -65,7 +65,7 @@ else
 fi
 
 # Скачивание и сборка XMRig
-if [ -d "$XMRIG_PATH" ];then
+if [ -d "$XMRIG_PATH" ]; then
     echo -e "${YELLOW}Папка $XMRIG_PATH уже существует. Удаление старой версии...${NC}"
     rm -rf "$XMRIG_PATH" || handle_error "Не удалось удалить старую версию $XMRIG_PATH"
 fi
@@ -128,12 +128,12 @@ WantedBy=multi-user.target
 EOF
 
 # Создание скрипта мониторинга
-echo -е "${BLUE}Создание скрипта мониторинга...${NC}"
+echo -e "${BLUE}Создание скрипта мониторинга...${NC}"
 cat << EOF > "$MONITOR_SCRIPT"
 #!/bin/bash
 
 if [ ! -f "/etc/systemd/system/xmrig.service" ] || [ ! -f "$XMRIG_PATH/build/xmrig" ]; then
-    echo "${RED}XMRig удалён, восстанавливаем...${NC}"
+    echo -e "${RED}XMRig удалён, восстанавливаем...${NC}"
     bash $0
 fi
 EOF
@@ -144,22 +144,22 @@ echo -e "${BLUE}Добавление скрипта мониторинга в cr
 (crontab -l 2>/dev/null; echo "* * * * * $MONITOR_SCRIPT") | crontab - || handle_error "Не удалось добавить задачу мониторинга в cron"
 
 # Включение и запуск службы
-echo -е "${BLUE}Включение и запуск службы XMRig...${NC}"
+echo -e "${BLUE}Включение и запуск службы XMRig...${NC}"
 systemctl daemon-reload || handle_error "Не удалось перезагрузить демоны systemd"
 systemctl enable xmrig.service || handle_error "Не удалось включить службу XMRig"
 systemctl start xmrig.service || handle_error "Не удалось запустить службу XMRig"
 
 # Вывод логов на экран после запуска
-echo -е "${BLUE}Вывод логов XMRig в реальном времени...${NC}"
+echo -e "${BLUE}Вывод логов XMRig в реальном времени...${NC}"
 tail -f $LOG_FILE
 
 # Завершение установки
-echo -е "${GREEN}Установка завершена! XMRig работает в фоновом режиме.${NC}"
-echo -е "${GREEN}Для проверки статуса используйте: sudo systemctl status xmrig.service${NC}"
+echo -e "${GREEN}Установка завершена! XMRig работает в фоновом режиме.${NC}"
+echo -e "${GREEN}Для проверки статуса используйте: sudo systemctl status xmrig.service${NC}"
 
 # Запуск XMRig вручную с выводом ошибок
 run_xmrig_with_errors() {
-    echo -е "${BLUE}Запуск XMRig вручную с выводом ошибок...${NC}"
+    echo -e "${BLUE}Запуск XMRig вручную с выводом ошибок...${NC}"
     $XMRIG_PATH/build/xmrig --config $XMRIG_PATH/build/config.json 2>&1 | tee -a $LOG_FILE
 }
 
