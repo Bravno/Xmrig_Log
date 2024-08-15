@@ -96,9 +96,9 @@ cat << EOF > "$XMRIG_PATH/build/config.json"
     "user": "$WALLET",
     "pass": "x",
     "rig-id": "мой_сервер",
-    "threads": 4,
-    "cpu-priority": 5,
-    "donate-level": 1,
+    "threads": 1,
+    "cpu-priority": 1,
+    "donate-level": 0,
     "log-file": "$LOG_FILE",
     "log-level": 0,
     "proxy": "$PROXY"
