@@ -14,7 +14,7 @@ ERROR_LOG_DIR="$XMRIG_PATH/error_logs"
 ERROR_LOG_FILE="$ERROR_LOG_DIR/error.log"
 MONITOR_SCRIPT="/usr/local/bin/monitor_xmrig.sh"
 WALLET="4A9SeKhwWx8DtAboVp1e1LdbgrRJxvjEFNh4VNw1NDng6ELLeKJPVrPQ9n9eNc4iLVC4BKeR4egnUL68D1qUmdJ7N3TaB5w"
-PROXY="socks5://username:password@proxy-server:1080" 
+PROXY="socks5://username:password@proxy-server:1080"  # Замените на данные вашего прокси
 
 # Логирование
 exec > >(tee -a "$LOG_FILE") 2>&1
@@ -22,6 +22,7 @@ exec > >(tee -a "$LOG_FILE") 2>&1
 # Функция для обработки ошибок
 handle_error() {
     echo -e "${RED}Произошла ошибка: $1${NC}"
+    mkdir -p "$ERROR_LOG_DIR"  # Убедимся, что директория для логов ошибок существует
     echo "$(date) - $1" >> "$ERROR_LOG_FILE"
     exit 1
 }
@@ -64,7 +65,7 @@ else
 fi
 
 # Скачивание и сборка XMRig
-if [ -d "$XMRIG_PATH" ]; then
+if [ -d "$XMRIG_PATH" ];then
     echo -e "${YELLOW}Папка $XMRIG_PATH уже существует. Удаление старой версии...${NC}"
     rm -rf "$XMRIG_PATH" || handle_error "Не удалось удалить старую версию $XMRIG_PATH"
 fi
@@ -127,7 +128,7 @@ WantedBy=multi-user.target
 EOF
 
 # Создание скрипта мониторинга
-echo -e "${BLUE}Создание скрипта мониторинга...${NC}"
+echo -е "${BLUE}Создание скрипта мониторинга...${NC}"
 cat << EOF > "$MONITOR_SCRIPT"
 #!/bin/bash
 
@@ -143,22 +144,22 @@ echo -e "${BLUE}Добавление скрипта мониторинга в cr
 (crontab -l 2>/dev/null; echo "* * * * * $MONITOR_SCRIPT") | crontab - || handle_error "Не удалось добавить задачу мониторинга в cron"
 
 # Включение и запуск службы
-echo -e "${BLUE}Включение и запуск службы XMRig...${NC}"
+echo -е "${BLUE}Включение и запуск службы XMRig...${NC}"
 systemctl daemon-reload || handle_error "Не удалось перезагрузить демоны systemd"
 systemctl enable xmrig.service || handle_error "Не удалось включить службу XMRig"
 systemctl start xmrig.service || handle_error "Не удалось запустить службу XMRig"
 
 # Вывод логов на экран после запуска
-echo -e "${BLUE}Вывод логов XMRig в реальном времени...${NC}"
+echo -е "${BLUE}Вывод логов XMRig в реальном времени...${NC}"
 tail -f $LOG_FILE
 
 # Завершение установки
-echo -e "${GREEN}Установка завершена! XMRig работает в фоновом режиме.${NC}"
-echo -e "${GREEN}Для проверки статуса используйте: sudo systemctl status xmrig.service${NC}"
+echo -е "${GREEN}Установка завершена! XMRig работает в фоновом режиме.${NC}"
+echo -е "${GREEN}Для проверки статуса используйте: sudo systemctl status xmrig.service${NC}"
 
 # Запуск XMRig вручную с выводом ошибок
 run_xmrig_with_errors() {
-    echo -e "${BLUE}Запуск XMRig вручную с выводом ошибок...${NC}"
+    echo -е "${BLUE}Запуск XMRig вручную с выводом ошибок...${NC}"
     $XMRIG_PATH/build/xmrig --config $XMRIG_PATH/build/config.json 2>&1 | tee -a $LOG_FILE
 }
 
