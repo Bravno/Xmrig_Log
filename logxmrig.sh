@@ -24,9 +24,28 @@ handle_error() {
 # Создание директории для логов ошибок
 mkdir -p "$ERROR_LOG_DIR" || handle_error "Не удалось создать директорию для логов ошибок"
 
-echo -e "${BLUE}Обновление системы и установка зависимостей...${NC}"
-apt update && apt upgrade -y || handle_error "Не удалось обновить систему"
-apt install -y build-essential cmake libuv1-dev libssl-dev libhwloc-dev git screen cpulimit libmicrohttpd-dev || handle_error "Не удалось установить зависимости"
+# Определение пакетного менеджера и установка зависимостей
+echo -e "${BLUE}Определение пакетного менеджера и установка зависимостей...${NC}"
+
+if command -v apt >/dev/null 2>&1; then
+    apt update && apt upgrade -y || handle_error "Не удалось обновить систему"
+    apt install -y build-essential cmake libuv1-dev libssl-dev libhwloc-dev git screen cpulimit libmicrohttpd-dev || handle_error "Не удалось установить зависимости"
+elif command -v yum >/dev/null 2>&1; then
+    yum update -y || handle_error "Не удалось обновить систему"
+    yum install -y epel-release || handle_error "Не удалось установить epel-release"
+    yum install -y cmake3 libuv-devel openssl-devel hwloc-devel git screen cpulimit libmicrohttpd-devel || handle_error "Не удалось установить зависимости"
+elif command -v dnf >/dev/null 2>&1; then
+    dnf update -y || handle_error "Не удалось обновить систему"
+    dnf install -y cmake libuv-devel openssl-devel hwloc-devel git screen cpulimit libmicrohttpd-devel || handle_error "Не удалось установить зависимости"
+elif command -v apk >/dev/null 2>&1; then
+    apk update || handle_error "Не удалось обновить систему"
+    apk add build-base cmake libuv-dev openssl-dev hwloc-dev git screen cpulimit libmicrohttpd-dev || handle_error "Не удалось установить зависимости"
+elif command -v zypper >/dev/null 2>&1; then
+    zypper refresh || handle_error "Не удалось обновить систему"
+    zypper install -y gcc gcc-c++ cmake libuv-devel libopenssl-devel hwloc-devel git screen cpulimit libmicrohttpd-devel || handle_error "Не удалось установить зависимости"
+else
+    handle_error "Пакетный менеджер не найден. Установка зависимостей невозможна."
+fi
 
 # Скачивание и сборка XMRig
 echo -e "${BLUE}Скачивание и сборка XMRig...${NC}"
