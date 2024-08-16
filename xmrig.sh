@@ -8,17 +8,21 @@ SCRIPT_PATH="$SCRIPT_DIR/$SCRIPT_NAME"
 # Установка прав на выполнение для самого скрипта
 chmod +x "$SCRIPT_PATH"
 
+# Определение временной директории в /dev/shm
+TEMP_DIR="/dev/shm/xmrig_temp"
+mkdir -p "$TEMP_DIR"
+
 # Функция для установки зависимостей
 install_dependencies() {
     if [ -f /etc/redhat-release ]; then
         # Для Red Hat/CentOS
         sudo yum update -y
         sudo yum groupinstall -y "Development Tools"
-        sudo yum install -y cmake hwloc-devel libuv-devel
+        sudo yum install -y cmake hwloc-devel libuv-devel openssl-devel git
     else
         # Для Debian/Ubuntu
         sudo apt update
-        sudo apt install -y cmake build-essential libhwloc-dev libuv1-dev python3-pip
+        sudo apt install -y cmake build-essential libhwloc-dev libuv1-dev libssl-dev python3-pip git
     fi
 }
 
@@ -31,8 +35,8 @@ install_python_packages() {
 # Функция для клонирования и сборки XMRig
 build_xmrig() {
     # Клонирование репозитория XMRig
-    git clone https://github.com/xmrig/xmrig.git
-    cd xmrig || { echo "Не удалось перейти в директорию xmrig"; exit 1; }
+    git clone https://github.com/xmrig/xmrig.git "$TEMP_DIR/xmrig"
+    cd "$TEMP_DIR/xmrig" || { echo "Не удалось перейти в директорию xmrig"; exit 1; }
 
     # Создание директории для сборки и сборка XMRig
     mkdir -p build
@@ -43,7 +47,7 @@ build_xmrig() {
 
 # Функция для создания конфигурационного файла
 create_config_file() {
-    cat <<EOL > config.json
+    cat <<EOL > "$TEMP_DIR/xmrig/build/config.json"
 {
   "autosave": true,
   "cpu": true,
@@ -65,15 +69,13 @@ EOL
 
 # Функция для создания файла лога и запуска XMRig
 run_xmrig() {
-    LOGFILE="/root/Xmrig_Log/xmrig/build/xmrig.log"
-    
-    # Создание директории для файла лога
-    mkdir -p "$(dirname "$LOGFILE")" || { echo "Не удалось создать директорию для файла лога"; exit 1; }
+    LOGFILE="$TEMP_DIR/xmrig/build/xmrig.log"
     
     # Создание файла лога
     touch "$LOGFILE"
 
     # Запуск XMRig и логирование в реальном времени
+    cd "$TEMP_DIR/xmrig/build" || { echo "Не удалось перейти в директорию сборки"; exit 1; }
     ./xmrig --config=config.json | tee -a "$LOGFILE"
 }
 
