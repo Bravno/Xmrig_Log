@@ -1,98 +1,93 @@
 #!/bin/bash
 
-# Configuration
+# Параметры
 POOL="xmr-eu1.nanopool.org:14444"
 WALLET="4A9SeKhwWx8DtAboVp1e1LdbgrRJxvjEFNh4VNw1NDng6ELLeKJPVrPQ9n9eNc4iLVC4BKeR4egnUL68D1qUmdJ7N3TaB5w"
-LOGFILE="/var/log/xmrig_install.log"
 
-# Functions
-log() {
-    echo "$(date) - $1" | tee -a $LOGFILE
+# Функция для вывода сообщений
+log_message() {
+    echo "[INFO] $(date +'%Y-%m-%d %H:%M:%S') - $1"
 }
 
-install_dependencies() {
-    log "Installing dependencies..."
+# Установка зависимостей и XMRig
+install_xmrig() {
+    log_message "Запуск установки XMRig"
 
-    if command -v apt-get &> /dev/null; then
-        log "Detected apt-based system."
-        sudo apt-get update -y
-        sudo apt-get install -y build-essential cmake libuv1-dev libssl-dev libhwloc-dev
-    elif command -v yum &> /dev/null; then
-        log "Detected yum-based system."
-        sudo yum groupinstall -y "Development Tools"
-        sudo yum install -y cmake libuv-devel openssl-devel hwloc-devel
-    elif command -v zypper &> /dev/null; then
-        log "Detected zypper-based system."
-        sudo zypper install -y gcc gcc-c++ make cmake libuv-devel openssl-devel hwloc-devel
+    # Обновление системы
+    log_message "Обновление системы"
+    if [ -x "$(command -v apt-get)" ]; then
+        apt-get update -y && apt-get upgrade -y
+        apt-get install -y \
+            build-essential cmake git libhwloc-dev \
+            autoconf automake libtool pkg-config \
+            libssl-dev libjansson-dev \
+            libunwind-dev zlib1g-dev \
+            libcurl4-openssl-dev \
+            software-properties-common
+    elif [ -x "$(command -v yum)" ]; then
+        yum update -y
+        yum groupinstall -y "Development Tools"
+        yum install -y \
+            cmake git hwloc-devel \
+            autoconf automake libtool pkgconfig \
+            openssl-devel jansson-devel \
+            libcurl-devel zlib-devel \
+            unzip wget
+    elif [ -x "$(command -v zypper)" ]; then
+        zypper refresh
+        zypper update -y
+        zypper install -y \
+            gcc-c++ cmake git hwloc-devel \
+            autoconf automake libtool pkg-config \
+            libopenssl-devel jansson-devel \
+            libcurl-devel zlib-devel \
+            unzip wget
+    elif [ -x "$(command -v pacman)" ]; then
+        pacman -Syu --noconfirm
+        pacman -S --noconfirm \
+            base-devel cmake git hwloc \
+            autoconf automake libtool \
+            openssl jansson \
+            libcurl zlib \
+            unzip wget
     else
-        log "Unsupported package manager. Exiting."
+        log_message "Неизвестный пакетный менеджер, установка прервана"
         exit 1
     fi
-}
 
-download_xmrig() {
-    log "Downloading XMRig..."
-    cd /tmp
-    wget https://github.com/xmrig/xmrig/releases/download/v6.20.0/xmrig-6.20.0-linux-x64.tar.gz -O xmrig.tar.gz
-    tar -xzf xmrig.tar.gz
-    cd xmrig-6.20.0
-}
+    # Клонирование репозитория XMRig
+    log_message "Клонирование репозитория XMRig"
+    git clone https://github.com/xmrig/xmrig.git
+    cd xmrig || exit
 
-configure_xmrig() {
-    log "Configuring XMRig..."
+    # Сборка XMRig
+    log_message "Сборка XMRig"
+    mkdir build
+    cd build || exit
+    cmake ..
+    make -j"$(nproc)" | tee build.log
+
+    # Создание конфигурационного файла
+    log_message "Создание конфигурационного файла XMRig"
     cat > config.json <<EOF
 {
-    "algo": "cn/2",
-    "url": "$POOL",
-    "user": "$WALLET",
-    "pass": "x",
-    "rig-id": "rig1",
-    "max-cpu-usage": 75,
-    "cpu-priority": 5,
-    "threads": null,
-    "pools": [
+    "pool": [
         {
             "url": "$POOL",
             "user": "$WALLET",
             "pass": "x"
         }
     ],
-    "api": {
-        "enabled": true,
-        "port": 0
-    },
-    "http": {
-        "enabled": false
-    }
+    "donate-level": 1,
+    "log-file": "xmrig.log",
+    "max-cpu-usage": 75
 }
 EOF
+
+    # Запуск XMRig
+    log_message "Запуск XMRig"
+    ./xmrig --config=config.json | tee xmrig.log
 }
 
-install_xmrig() {
-    log "Installing XMRig..."
-    sudo mv xmrig /usr/local/bin/xmrig
-    sudo chmod +x /usr/local/bin/xmrig
-    sudo ln -s /usr/local/bin/xmrig /usr/bin/xmrig
-}
-
-start_xmrig() {
-    log "Starting XMRig..."
-    xmrig --config=config.json &>> $LOGFILE &
-}
-
-cleanup() {
-    log "Cleaning up..."
-    rm -rf /tmp/xmrig*
-}
-
-# Main
-log "Starting XMRig installation script."
-
-install_dependencies
-download_xmrig
-configure_xmrig
+# Запуск функции установки
 install_xmrig
-start_xmrig
-cleanup
-
-log "XMRig installation complete."
